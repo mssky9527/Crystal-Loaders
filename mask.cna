@@ -1,0 +1,39 @@
+debug ( 7 );
+
+import crystalpalace.spec.* from: crystalpalace.jar;
+import java.util.HashMap;
+
+sub print_info {
+   println ( formatDate ( "[HH:mm:ss] " ) . "\cE[Crystal Mask]\o " . $1 );
+}
+
+sub print_error {
+   println ( formatDate ( "[HH:mm:ss] " ) . "\c4[Crystal Mask]\o " . $1 );
+}
+
+# ----------------------------------
+# $1 - Beacon type (default, pivot)
+# $2 - Beacon architecture (x86/x64)
+# ----------------------------------
+set BEACON_SLEEP_MASK
+{
+   local ( '$path $spec $cap $coff $final' );
+
+   $path = getFileProper ( script_resource ( "mask" ), "mask.spec" );
+
+   $spec = [ LinkSpec Parse: $path ];
+   $cap  = [ Capability None: $2 ];
+   $coff = [ $spec run: $cap, [ new HashMap ] ];
+
+   $final = bof_extract ( $coff, "go" );
+
+   if ( strlen ( $final ) == 0 )
+   {
+      print_error ( "Failed to build custom sleepmask." );
+      return $null;
+   }
+
+
+   print_info ( "Built custom sleepmask." );
+   return $final;
+}

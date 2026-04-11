@@ -1,7 +1,9 @@
 all:
-	cd udrl && make $@
-	cd postex-udrl && make $@
+	cd loader && make $@
+	cd postex && make $@
+	cd mask && make $@
 
 clean:
-	cd udrl && make $@
-	cd postex-udrl && make $@
+	cd loader && make $@
+	cd postex && make $@
+	cd mask && make $@
